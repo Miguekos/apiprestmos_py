@@ -1,5 +1,5 @@
 from app import app
-
+from mongo import mongo
 import time
 import json
 from datetime import datetime, timedelta
@@ -7,6 +7,11 @@ from threading import Thread
 from time import sleep
 import requests
 from pytz import timezone
+
+try:
+    print(mongo.db)
+except:
+    print("{}".format("Error al conectar al MONGO"))
 
 now_new = datetime.now()
 
