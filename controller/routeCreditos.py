@@ -9,41 +9,41 @@ from flask_cors import CORS
 from main import timestamp, li_time
 CORS(app, supports_credentials=True)
 
-@app.route('/creditos/add/<id>/<dni>', methods=['POST'])
-def agregardCreditos(id, dni):
+def calcuarDeuda(monto, porcent):
+    return monto * (porcent / 100) + monto
+
+@app.route('/creditos/add/<id>', methods=['POST'])
+def agregardCreditos(id):
     try:
         _json = request.json
-        deuda = _json['monto'] + 1200
-        _json.update(
-            {
-                "deuda" : deuda,
-                "dni" : dni,
-                "id" : id
-            }
-        )
-        # _json
         print(_json)
-        return _json
-    except:
-        return "ok"
+        deuda = int(_json['monto']) + 1200
+        # _json
+        _jsonResponse = {
+                "deuda" : calcuarDeuda(deuda, _json['interes']),
+                "cuotas": _json['cuotas'],
+                "interes": _json['interes'],
+                "idClient" : id,
+                "expand": False,
+                "created_at": li_time
+            }
+        id = mongo.db.creditos.insert(_jsonResponse)
+        resp = jsonify('{}'.format(id))
+        resp.status_code = 200
+        return resp
+        # print(_jsonResponse)
+        # return _jsonResponse
+    except ValueError:
+        print(ValueError)
+        # jsonResp = {
+        #     "codRes": "99",
+        #     "message": "{}".format("error controlado")
+        # }
+        # return jsonify(jsonResp)
 
-@app.route('/creditos', methods=['POST'])
-def agregardCreditos(id, dni):
-    if request.method == 'POST':
-        try:
-            _json = request.json
-            deuda = _json['monto'] + 1200
-            _json.update(
-                {
-                    "deuda" : deuda,
-                    "dni" : dni,
-                    "id" : id
-                }
-            )
-            # _json
-            print(_json)
-            return _json
-        except:
-            return "ok"
-    elif request.method == 'GET':
-        return "soy get"
+@app.route('/creditos/<id>')
+def getCrediOne(id):
+    print("Consultando Creditos del ID: {}".format(id))
+    user = mongo.db.creditos.find({'idClient': id})
+    resp = dumps(user)
+    return resp
