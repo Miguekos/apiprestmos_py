@@ -10,18 +10,24 @@ from main import timestamp, li_time
 CORS(app, supports_credentials=True)
 
 def calcuarDeuda(monto, porcent):
-    return monto * (porcent / 100) + monto
+    resultado = (monto * (porcent / 100)) + monto
+    print(resultado)
+    return resultado
+
+def importePorCuotas(deuda, cuotas):
+    return deuda / cuotas
 
 @app.route('/creditos/add/<id>', methods=['POST'])
 def agregardCreditos(id):
     try:
         _json = request.json
         print(_json)
-        deuda = int(_json['monto']) + 1200
+        deudaTotal = calcuarDeuda(float(_json['monto']), float(_json['interes']))
         # _json
         _jsonResponse = {
-                "deuda" : calcuarDeuda(deuda, _json['interes']),
+                "deuda" : deudaTotal,
                 "cuotas": _json['cuotas'],
+                "ImporteCuotas" : importePorCuotas(deudaTotal, _json['cuotas']),
                 "interes": _json['interes'],
                 "idClient" : id,
                 "expand": False,
@@ -45,5 +51,28 @@ def agregardCreditos(id):
 def getCrediOne(id):
     print("Consultando Creditos del ID: {}".format(id))
     user = mongo.db.creditos.find({'idClient': id})
+    resp = dumps(user)
+    return resp
+
+@app.route('/creditos/cronograma/<id>')
+def getCrediCronogramaOne(id):
+    print("Consultando Creditos del ID: {}".format(id))
+    user = mongo.db.creditos.find({'idClient': id})
+    abonos = mongo.db.abonos.find({'idClient': id})
+    """
+    Se trae la fecha en qeue se creo el credito se suma la cantidad de cuotas pagadas y asi calcular los dias restante 
+    
+    """
+    for x in user:
+        print(x['deuda'])
+        print(x['created_at'])
+        for b in abonos:
+            print(b['montoTotalAbonado'])
+            print(b['cuotasPagadas'])
+            print(b['created_at'])
+            # print(user)
+            jsonResponse = {
+                # deudaTotal
+            }
     resp = dumps(user)
     return resp
