@@ -2,11 +2,14 @@ from app import app
 from flask import jsonify, flash, request
 from werkzeug.security import generate_password_hash, check_password_hash
 from mongo import mongo
-from bson.json_util import dumps
+from bson.json_util import dumps, loads
 # JSON.parse (dumps)
 from bson.objectid import ObjectId
 from flask_cors import CORS
+from datetime import datetime, timedelta
 from main import timestamp, li_time
+import pytz
+import funciones
 CORS(app, supports_credentials=True)
 
 def calcuarDeuda(monto, porcent):
@@ -16,6 +19,13 @@ def calcuarDeuda(monto, porcent):
 
 def importePorCuotas(deuda, cuotas):
     return deuda / cuotas
+
+def sumalista(listaNumeros):
+    laSuma = 0
+    for i in listaNumeros:
+        laSuma = laSuma + i
+    return laSuma
+
 
 @app.route('/creditos/add/<id>', methods=['POST'])
 def agregardCreditos(id):
@@ -50,29 +60,75 @@ def agregardCreditos(id):
 @app.route('/creditos/<id>')
 def getCrediOne(id):
     print("Consultando Creditos del ID: {}".format(id))
-    user = mongo.db.creditos.find({'idClient': id})
-    resp = dumps(user)
+    creditos = mongo.db.creditos.find({'idClient': id})
+    # creditos = mongo.db.alertas.insert({
+    #     'idClient': id,
+    #     'idCredit': id
+    #             })
+    resp = dumps(creditos)
+    asd = loads(resp)
+    cantidadCreditos = len(asd)
+    for x in asd:
+        print(x['idClient'])
+    print(cantidadCreditos)
+    # print(resp)
     return resp
 
 @app.route('/creditos/cronograma/<id>')
 def getCrediCronogramaOne(id):
     print("Consultando Creditos del ID: {}".format(id))
-    user = mongo.db.creditos.find({'idClient': id})
-    abonos = mongo.db.abonos.find({'idClient': id})
+    abonos = mongo.db.abonos.find({'idCredito': id})
+    print(abonos)
     """
     Se trae la fecha en qeue se creo el credito se suma la cantidad de cuotas pagadas y asi calcular los dias restante 
-    
     """
-    for x in user:
-        print(x['deuda'])
-        print(x['created_at'])
-        for b in abonos:
-            print(b['montoTotalAbonado'])
-            print(b['cuotasPagadas'])
-            print(b['created_at'])
-            # print(user)
-            jsonResponse = {
-                # deudaTotal
-            }
-    resp = dumps(user)
+    global Total
+    global montoTotalAbonado
+    global cuotasPagadas
+    montoTotalAbonado = []
+    Total = []
+    cuotasPagadas = []
+    credit = mongo.db.creditos.find({'_id': ObjectId(id)})
+    for x in credit:
+        print(x)
+        global deudaCredito, fechaIniCredito, cuotasCredito
+        deudaCredito = x['deuda']
+        fechaIniCredito = x['created_at'] - timedelta(hours=5)
+        # print("fechaIniCredito", fechaIniCredito)
+        cuotasCredito = x['cuotas']
+        # print(deudaCredito)
+    for b in abonos:
+        # idDelCliente = b['idClient']
+        # credit = mongo.db.creditos.find({'idClient': idDelCliente}, {'_id': ObjectId(id)})
+        # print(fechaIniCredito)
+        montos = b['montoTotalAbonado']
+        cuotas = b['cuotasPagadas']
+        fechas = b['created_at'] - timedelta(hours=5)
+        # print(type(fechas))
+        # print(fechas)
+        # fechas = b['created_at'] - timedelta(days=30)
+        # print("fechas", datetime("{}".format(fechas), tzinfo=pytz.timezone('Asia/Shanghai')))
+        montoTotalAbonado.append(montos)
+        cuotasPagadas.append(cuotas)
+        jsonResponse = {
+            "montoAbonado" : montos,
+            "cuotasPagadas" : cuotas,
+            "fechaIngreso" : "{}".format(fechas)
+        }
+        Total.append(jsonResponse)
+    sumaAbonos = sumalista(montoTotalAbonado)
+    sumaCuotas = sumalista(cuotasPagadas)
+    primaFechaDePAgo = funciones.noSunday(fechaIniCredito, 29, cuotasCredito - sumaCuotas)
+    _jsonResult = {
+        "deuda" : deudaCredito,
+        "deudaActual" : deudaCredito - sumaAbonos,
+        "fechaInicioCredito" : "{}".format(fechaIniCredito),
+        "pagos" : Total,
+        "totalAbonado" : sumaAbonos,
+        "totalCuotasPagadas" : sumaCuotas,
+        "cuotasPorPagar" : cuotasCredito - sumaCuotas,
+        "proximadiadepago" : primaFechaDePAgo['fechasCuotas'],
+        "DiasMora": primaFechaDePAgo['DiasVencidos'] + 1
+    }
+    resp = dumps(_jsonResult)
     return resp

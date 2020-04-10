@@ -31,6 +31,14 @@ def add_client():
         global id
         id = mongo.db.clientes.insert(_json)
         print(id)
+        _jsonAlert = {
+            "idCliente": id,
+            "cantCreditos": 0,
+            "diasMora": 0,
+            "detalleMora": []
+        }
+        alert = mongo.db.alertas.insert(_jsonAlert)
+        print("Respuesta de la alerta: {}".format(alert))
         resp = jsonify('{}'.format(id))
         resp.status_code = 200
         return resp
