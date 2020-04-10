@@ -40,7 +40,8 @@ def agregardCreditos(id):
                 "ImporteCuotas" : importePorCuotas(deudaTotal, _json['cuotas']),
                 "interes": _json['interes'],
                 "idClient" : id,
-                "expand": False,
+                "activo": True,
+                "estado": True,
                 "created_at": li_time
             }
         id = mongo.db.creditos.insert(_jsonResponse)
@@ -91,7 +92,9 @@ def getCrediCronogramaOne(id):
     credit = mongo.db.creditos.find({'_id': ObjectId(id)})
     for x in credit:
         print(x)
-        global deudaCredito, fechaIniCredito, cuotasCredito
+        global deudaCredito, fechaIniCredito, cuotasCredito, clienteId
+        clienteId = x['_id']
+        print("clienteId", clienteId)
         deudaCredito = x['deuda']
         fechaIniCredito = x['created_at'] - timedelta(hours=5)
         # print("fechaIniCredito", fechaIniCredito)
@@ -119,6 +122,15 @@ def getCrediCronogramaOne(id):
     sumaAbonos = sumalista(montoTotalAbonado)
     sumaCuotas = sumalista(cuotasPagadas)
     primaFechaDePAgo = funciones.noSunday(fechaIniCredito, 29, cuotasCredito - sumaCuotas)
+    cuotasPorPagarVar = cuotasCredito - sumaCuotas
+    if cuotasPorPagarVar == 0:
+        print("actuaizar estado")
+        mongo.db.creditos.update_one({'_id': ObjectId(clienteId)},
+                                 {'$set': {'estado': False}})
+    else:
+        mongo.db.creditos.update_one({'_id': ObjectId(clienteId)},
+                                     {'$set': {'estado': True}})
+        print("no pasa nada")
     _jsonResult = {
         "deuda" : deudaCredito,
         "deudaActual" : deudaCredito - sumaAbonos,
@@ -126,7 +138,7 @@ def getCrediCronogramaOne(id):
         "pagos" : Total,
         "totalAbonado" : sumaAbonos,
         "totalCuotasPagadas" : sumaCuotas,
-        "cuotasPorPagar" : cuotasCredito - sumaCuotas,
+        "cuotasPorPagar" : cuotasPorPagarVar,
         "proximadiadepago" : primaFechaDePAgo['fechasCuotas'],
         "DiasMora": primaFechaDePAgo['DiasVencidos'] + 1
     }
