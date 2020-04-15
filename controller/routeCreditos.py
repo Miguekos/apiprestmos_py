@@ -7,7 +7,6 @@ from bson.json_util import dumps, loads
 from bson.objectid import ObjectId
 from flask_cors import CORS
 from datetime import datetime, timedelta
-from main import timestamp, li_time
 import pytz
 import funciones
 CORS(app, supports_credentials=True)
@@ -30,6 +29,8 @@ def sumalista(listaNumeros):
 @app.route('/creditos/add/<id>', methods=['POST'])
 def agregardCreditos(id):
     try:
+        lima = pytz.timezone('America/Lima')
+        li_time = datetime.now(lima)
         _json = request.json
         print(_json)
         deudaTotal = calcuarDeuda(float(_json['monto']), float(_json['interes']))
