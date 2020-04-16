@@ -5,7 +5,8 @@ from mongo import mongo
 from bson.json_util import dumps
 from bson.objectid import ObjectId
 from flask_cors import CORS
-from main import timestamp, li_time
+import pytz
+from datetime import datetime
 CORS(app, supports_credentials=True)
 
 def calcuarDeuda(monto, porcent):
@@ -14,6 +15,8 @@ def calcuarDeuda(monto, porcent):
 # Rutas User
 @app.route('/cliente/add', methods=['POST'])
 def add_client():
+    lima = pytz.timezone('America/Lima')
+    li_time = datetime.now(lima)
     _json = request.json
     print(_json)
     # _name = _json['name']

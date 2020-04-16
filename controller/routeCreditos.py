@@ -93,10 +93,11 @@ def getCrediCronogramaOne(id):
     credit = mongo.db.creditos.find({'_id': ObjectId(id)})
     for x in credit:
         print(x)
-        global deudaCredito, fechaIniCredito, cuotasCredito, clienteId
+        global deudaCredito, fechaIniCredito, cuotasCredito, clienteId, importeCuotas
         clienteId = x['_id']
         print("clienteId", clienteId)
         deudaCredito = x['deuda']
+        importeCuotas = x['ImporteCuotas']
         fechaIniCredito = x['created_at'] - timedelta(hours=5)
         # print("fechaIniCredito", fechaIniCredito)
         cuotasCredito = x['cuotas']
@@ -135,6 +136,7 @@ def getCrediCronogramaOne(id):
     _jsonResult = {
         "deuda" : deudaCredito,
         "deudaActual" : deudaCredito - sumaAbonos,
+        "importeCuota" : importeCuotas,
         "fechaInicioCredito" : "{}".format(fechaIniCredito),
         "pagos" : Total,
         "totalAbonado" : sumaAbonos,

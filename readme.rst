@@ -1,1 +1,2 @@
-You can go through the tutorial https://www.roytuts.com/python-flask-rest-api-mongodb-crud-example/
+docker build -t apiprestamo:1.6 .
+docker run -d -p 5000:5000 apiprestamo:1.8
