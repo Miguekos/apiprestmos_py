@@ -2,6 +2,7 @@ from app import app
 from flask import jsonify, flash, request
 from werkzeug.security import generate_password_hash, check_password_hash
 from mongo import mongo
+import json
 from bson.json_util import dumps
 from bson.objectid import ObjectId
 from flask_cors import CORS
@@ -26,6 +27,31 @@ def add_user():
     else:
         return not_found()
 
+@app.route('/login', methods=["POST"])
+def login():
+    _json = request.json
+    _user = mongo.db.user.find_one({
+        'email': _json["email"]
+    })
+    validar = check_password_hash(_user['pwd'], _json["pwd"])
+    if validar == True:
+        idUser = _user['_id']
+        print(idUser)
+        jsonFinal = {
+            "codRes": "00",
+            "id" : idUser,
+            "name" : _user['name'],
+            "email": _user['email']
+        }
+        return dumps(jsonFinal)
+    else:
+        jsonFinal = {
+            "codRes" : "01",
+            "message" : "LoginIncorrecto"
+        }
+        resp = jsonify(jsonFinal)
+        resp.status_code = 200
+        return resp
 
 @app.route('/user/users')
 def users():
@@ -34,7 +60,7 @@ def users():
     return resp
 
 
-@app.route('/user/user/<id>')
+@app.route('/user/<id>')
 def user(id):
     user = mongo.db.user.find_one({'_id': ObjectId(id)})
     resp = dumps(user)

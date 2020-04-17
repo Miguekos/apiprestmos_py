@@ -41,6 +41,7 @@ def agregardCreditos(id):
                 "ImporteCuotas" : importePorCuotas(deudaTotal, _json['cuotas']),
                 "interes": _json['interes'],
                 "idClient" : id,
+                # "idUsuario": _json['idUsuario'],
                 "activo": True,
                 "estado": True,
                 "created_at": li_time
