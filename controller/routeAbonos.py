@@ -8,6 +8,7 @@ from bson.objectid import ObjectId
 from flask_cors import CORS
 from pytz import timezone
 from datetime import datetime, timedelta
+import collections
 CORS(app, supports_credentials=True)
 
 def montoAbonado(cuotas, importe):
@@ -52,13 +53,65 @@ def agregardabonos():
         # }
         # return jsonify(jsonResp)
 
-
 @app.route('/abonos')
 def getAbonos():
     print("Consultando Creditos del ID: {}".format(id))
     user = mongo.db.abonos.find()
+    # print(list(user))
+    # print(user)
     resp = dumps(user)
+    # Converting string to list
+    # res = resp.strip('][').split(', ')
+    # # printing final result and its type
+    # print("final list", res)
+    # print(type(res))
+    # print(type(user))
+    # asd = collections.Counter(res)
+    # print(asd)
     return resp
+
+@app.route('/abonos/reporte')
+def getAbonosReporte():
+    print("Consultando Creditos del ID: {}".format(id))
+    user = mongo.db.abonos.find()
+    # print(user.next())
+    # print(user.next())
+    # print(user.next())
+
+    #
+    # user.rewind()
+    #
+    # print(user.next())
+    # print(user.next())
+    # print(user.next())
+    # print(user.next()['_id'])
+    # agr = [{'$group': {'_id': '$idClient'}}]
+    agr = [
+        {'$group': {'_id': '$idClient', 'pagos': {'$push':"$$ROOT"}}},
+        {'$addFields':
+            {
+                'TotalAbonado': { '$sum' : "$pagos.montoTotalAbonado"}
+            }
+        },
+        ]
+
+    val = list(mongo.db.abonos.aggregate(agr))
+    print(val)
+
+    # print(list(user))
+
+
+    # print(user)
+    resp = dumps(user)
+    # Converting string to list
+    res = resp.strip('][').split(', ')
+    # # printing final result and its type
+    # print("final list", res)
+    # print(type(res))
+    # print(type(user))
+    asd = collections.Counter(res)
+    # print(asd)
+    return dumps(val)
 
 @app.route('/abonos/<id>')
 def getAbonosOne(id):

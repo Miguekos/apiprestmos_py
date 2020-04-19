@@ -30,24 +30,44 @@ def add_user():
 @app.route('/login', methods=["POST"])
 def login():
     _json = request.json
-    _user = mongo.db.user.find_one({
-        'email': _json["email"]
-    })
-    validar = check_password_hash(_user['pwd'], _json["pwd"])
-    if validar == True:
-        idUser = _user['_id']
-        print(idUser)
+    try:
+        _user = mongo.db.user.find_one({
+            'email': _json["email"]
+        })
+        print("_user", type(_user))
+        if _user != None:
+            validar = check_password_hash(_user['pwd'], _json["pwd"])
+            print("validar", validar)
+            if validar == True:
+                idUser = _user['_id']
+                print(idUser)
+                jsonFinal = {
+                    "codRes": "00",
+                    "id" : idUser,
+                    "name" : _user['name'],
+                    "email": _user['email']
+                }
+                return dumps(jsonFinal)
+            else:
+                jsonFinal = {
+                    "codRes": "01",
+                    "message": "Password Incorrecto"
+                }
+                resp = jsonify(jsonFinal)
+                resp.status_code = 200
+                return resp
+        else:
+            jsonFinal = {
+                "codRes": "01",
+                "message": "Email Incorrecto"
+            }
+            resp = jsonify(jsonFinal)
+            resp.status_code = 200
+            return resp
+    except:
         jsonFinal = {
-            "codRes": "00",
-            "id" : idUser,
-            "name" : _user['name'],
-            "email": _user['email']
-        }
-        return dumps(jsonFinal)
-    else:
-        jsonFinal = {
-            "codRes" : "01",
-            "message" : "LoginIncorrecto"
+            "codRes" : "99",
+            "message" : "ErrorControlado"
         }
         resp = jsonify(jsonFinal)
         resp.status_code = 200
