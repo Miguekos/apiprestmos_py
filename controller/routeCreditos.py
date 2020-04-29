@@ -123,6 +123,7 @@ def getCrediCronogramaOne(id):
         }
         Total.append(jsonResponse)
     sumaAbonos = sumalista(montoTotalAbonado)
+    print("sumaAbonos", sumaAbonos / importeCuotas)
     sumaCuotas = sumalista(cuotasPagadas)
     primaFechaDePAgo = funciones.noSunday(fechaIniCredito, 29, cuotasCredito - sumaCuotas)
     cuotasPorPagarVar = cuotasCredito - sumaCuotas
