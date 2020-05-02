@@ -11,10 +11,13 @@ def convertTimestampToData(date):
 def calcularMora():
     return "ads"
 
+def CalcuarlCuotas(deudaCredito, sumaAbonos, importeCuotas):
+    return (deudaCredito - sumaAbonos) / importeCuotas
+
 def noSunday(fechaCredito, cuotasTotales, cuotasPagadas):
-    print(fechaCredito.strftime('%d/%m/%y'))
-    print(cuotasTotales)
-    print(cuotasPagadas)
+    print("FechaInicoDeCredto",fechaCredito.strftime('%d/%m/%y'))
+    print("cuotasTotales:" , cuotasTotales)
+    print("cuotasPagadas:", cuotasPagadas)
     from datetime import datetime, timedelta
     import pytz
     # asd = fechaCredito + timedelta(days=1)
@@ -22,14 +25,25 @@ def noSunday(fechaCredito, cuotasTotales, cuotasPagadas):
     cuotasTotalesT = cuotasTotales
     daterange = []
     diasvencidos = []
+    todosLosDIas = []
     # print(datetime.now(fechaCredito))
-    for i in range(1, cuotasTotalesT):
-        # print(cuotasTotalesT)
+
+    i = 0
+    diasPorRecorrer = 24
+    # for i in range(1, cuotasTotalesT):
+    while i < diasPorRecorrer:
         yesterday = fechaCredito + timedelta(days=i)
-        if yesterday.weekday() != 6:
+        if yesterday.weekday() == 6:
+            i = i + 1
+            diasPorRecorrer = diasPorRecorrer + 1
+        else:
             daterange.append(yesterday.strftime('%d/%m/%y'))
             diasvencidos.append(yesterday)
+            i = i + 1
             # print("DIAS", yesterday.strftime('%d/%m/%y'))
+
+    # print("todosLosDIas", len(todosLosDIas))
+    # print("todosLosDIas", todosLosDIas)
     print(daterange[-cuotasPagadas:])
     formato1 = "%a %b %d %H:%M:%S %Y"
     formato2 = "%d/%m/%y"
@@ -37,9 +51,9 @@ def noSunday(fechaCredito, cuotasTotales, cuotasPagadas):
     hoyAhora = datetime.now()
     diasDeMora = hoyAhora - fechaDePago
     diasDeMora = diasDeMora.days
-    print(diasDeMora)
-    print(type(fechaDePago))
-    print(type(hoyAhora))
+    print("Dias de Mora:", diasDeMora)
+    # print(type(fechaDePago))
+    # print(type(hoyAhora))
     print("fechasPorPagar", len(daterange))
     jsonResposne = {
         "fechasCuotas" : daterange[-cuotasPagadas:],

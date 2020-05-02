@@ -25,6 +25,26 @@ def sumalista(listaNumeros):
         laSuma = laSuma + i
     return laSuma
 
+def sumalistaPuchos(listaNumeros, montoPorCuotas, pagosXCuotas):
+    print("pagosXCuotas:", pagosXCuotas)
+    print("montoPorCuotas:", montoPorCuotas)
+    restandoPagosDeCuotas = (montoPorCuotas * pagosXCuotas)
+    laSuma = 0
+    for i in listaNumeros:
+        laSuma = laSuma + i
+
+    print("restandoPagosDeCuotas:", restandoPagosDeCuotas)
+    restarCuotasPuchasCompletadas = str(laSuma / montoPorCuotas)
+    restarCuotasPuchasCompletadas = int(restarCuotasPuchasCompletadas.split(".")[0]) * montoPorCuotas
+    print("restarCuotasPuchasCompletadas", restarCuotasPuchasCompletadas)
+    # if restarCuotasPuchasCompletadas > laSuma:
+    #     return 0
+    # else:
+    #     print("laSuma:", laSuma)
+    #     print(restandoPagosDeCuotas - laSuma)
+    #     return restandoPagosDeCuotas - laSuma
+    return montoPorCuotas - (laSuma - restarCuotasPuchasCompletadas)
+
 
 @app.route('/creditos/add/<id>', methods=['POST'])
 def agregardCreditos(id):
@@ -79,24 +99,26 @@ def getCrediOne(id):
 
 @app.route('/creditos/cronograma/<id>')
 def getCrediCronogramaOne(id):
-    print("Consultando Creditos del ID: {}".format(id))
     abonos = mongo.db.abonos.find({'idCredito': id})
-    print(abonos)
+    print("Consultando Creditos del ID: {}".format(id))
+    # print(abonos)
     """
     Se trae la fecha en qeue se creo el credito se suma la cantidad de cuotas pagadas y asi calcular los dias restante 
     """
     global Total
     global montoTotalAbonado
-    global cuotasPagadas
+    # global cuotasPagadas
     montoTotalAbonado = []
     Total = []
-    cuotasPagadas = []
+    montoAbonadoPuchos = []
+    montoAbonadoCuotas = []
+    # cuotasPagadas = []
     credit = mongo.db.creditos.find({'_id': ObjectId(id)})
     for x in credit:
-        print(x)
+        print("Detalle del Credito:", x)
         global deudaCredito, fechaIniCredito, cuotasCredito, clienteId, importeCuotas
         clienteId = x['_id']
-        print("clienteId", clienteId)
+        # print("clienteId", clienteId)
         deudaCredito = x['deuda']
         importeCuotas = x['ImporteCuotas']
         fechaIniCredito = x['created_at'] - timedelta(hours=5)
@@ -108,33 +130,44 @@ def getCrediCronogramaOne(id):
         # credit = mongo.db.creditos.find({'idClient': idDelCliente}, {'_id': ObjectId(id)})
         # print(fechaIniCredito)
         montos = b['montoTotalAbonado']
-        cuotas = b['cuotasPagadas']
+        tipoPago = b['tipoPago']
+        if tipoPago == 2:
+            montoAbonadoPuchos.append(montos)
+
+        if tipoPago == 1:
+            montoAbonadoCuotas.append(montos)
+
         fechas = b['created_at'] - timedelta(hours=5)
         # print(type(fechas))
         # print(fechas)
         # fechas = b['created_at'] - timedelta(days=30)
         # print("fechas", datetime("{}".format(fechas), tzinfo=pytz.timezone('Asia/Shanghai')))
         montoTotalAbonado.append(montos)
-        cuotasPagadas.append(cuotas)
+        # cuotasPagadas.append(cuotas)
         jsonResponse = {
             "montoAbonado" : montos,
-            "cuotasPagadas" : cuotas,
+            "tipoDePago" : tipoPago,
             "fechaIngreso" : "{}".format(fechas)
         }
         Total.append(jsonResponse)
     sumaAbonos = sumalista(montoTotalAbonado)
-    print("sumaAbonos", sumaAbonos / importeCuotas)
-    sumaCuotas = sumalista(cuotasPagadas)
-    primaFechaDePAgo = funciones.noSunday(fechaIniCredito, 29, cuotasCredito - sumaCuotas)
-    cuotasPorPagarVar = cuotasCredito - sumaCuotas
-    if cuotasPorPagarVar == 0:
-        print("actuaizar estado")
+    cuatosPorPagar = (deudaCredito - sumaAbonos) / importeCuotas
+    print("QWEQWE: ", str(cuatosPorPagar).split("."))
+    cuatosPorPagarInt = int(cuatosPorPagar)
+    print("cuatosPorPagar:", cuatosPorPagar)
+    # print("sumaAbonos", sumaAbonos / importeCuotas)
+    # sumaCuotas = sumalista(cuotasPagadas)
+    cuotasPorPagarVar = cuotasCredito - int(cuatosPorPagar)
+    primaFechaDePAgo = funciones.noSunday(fechaIniCredito, cuotasCredito, cuatosPorPagarInt)
+    print("cuotasPorPagarVar:" , cuotasPorPagarVar)
+    if cuatosPorPagarInt == 0:
+        # print("actuaizar estado")
         mongo.db.creditos.update_one({'_id': ObjectId(clienteId)},
                                  {'$set': {'estado': False}})
     else:
         mongo.db.creditos.update_one({'_id': ObjectId(clienteId)},
                                      {'$set': {'estado': True}})
-        print("no pasa nada")
+        # print("no pasa nada")
     _jsonResult = {
         "deuda" : deudaCredito,
         "deudaActual" : deudaCredito - sumaAbonos,
@@ -142,8 +175,9 @@ def getCrediCronogramaOne(id):
         "fechaInicioCredito" : "{}".format(fechaIniCredito),
         "pagos" : Total,
         "totalAbonado" : sumaAbonos,
-        "totalCuotasPagadas" : sumaCuotas,
-        "cuotasPorPagar" : cuotasPorPagarVar,
+        "montoAbonadoPuchos" : sumalistaPuchos(montoAbonadoPuchos, importeCuotas, len(montoAbonadoCuotas)),
+        "totalCuotasPagadas" : float("{:.1f}".format(cuotasCredito - cuatosPorPagar)),
+        "cuotasPorPagar" : float("{:.1f}".format(cuatosPorPagar)),
         "proximadiadepago" : primaFechaDePAgo['fechasCuotas'],
         "DiasMora": primaFechaDePAgo['DiasVencidos'] + 1
     }

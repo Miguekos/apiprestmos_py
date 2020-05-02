@@ -11,8 +11,13 @@ from datetime import datetime, timedelta
 import collections
 CORS(app, supports_credentials=True)
 
-def montoAbonado(cuotas, importe):
-    return cuotas * importe
+def montoAbonado(tipo, cuotasMonto, cuotas, importe):
+    print("cuotasMonto: ", cuotasMonto)
+    print("cuotasMontoType: ", type(cuotasMonto))
+    if tipo == 1:
+        return cuotas * importe
+    elif tipo == 2:
+        return float(cuotasMonto)
 
 @app.route('/abonos/add', methods=['POST'])
 def agregardabonos():
@@ -24,6 +29,7 @@ def agregardabonos():
         print(_json)
         # deuda = int(_json['monto'])
         # _json
+        montoTotalAbonado = montoAbonado(_json['tipoPago'],_json['cuotasMonto'], float(_json['cuotasPagadas']), float(_json['ImporteCuotas']))
         _jsonResponse = {
                 "cliente": _json['cliente'],
                 "dni": _json['dni'],
@@ -33,8 +39,9 @@ def agregardabonos():
                 "ImporteCuotas" : _json['ImporteCuotas'],
                 "idClient" : _json['idClient'],
                 "idCredito": _json['_id']['$oid'],
+                "tipoPago": _json['tipoPago'],
                 "cuotasPagadas": _json['cuotasPagadas'],
-                "montoTotalAbonado" : montoAbonado(float(_json['cuotasPagadas']), float(_json['ImporteCuotas'])),
+                "montoTotalAbonado" : montoTotalAbonado,
                 "expand": False,
                 "created_at": li_time
             }
